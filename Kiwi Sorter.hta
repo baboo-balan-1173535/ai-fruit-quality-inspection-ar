@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<title>Kiwi Sorter Control Panel</title>
+<hta:application id="kiwiApp"
+  applicationname="Kiwi Sorter"
+  border="thin"
+  borderstyle="normal"
+  caption="yes"
+  maximizebutton="no"
+  scroll="no"
+  singleinstance="yes"
+  icon="" />
+<style>
+  /* IE engine: no CSS variables, plain hex, flexbox OK */
+  html, body { margin:0; padding:0; height:100%; }
+  body {
+    background:#0B0E14; color:#ECEDF6;
+    font-family:'Segoe UI', Tahoma, sans-serif;
+    width:520px;
+  }
+  .wrap { padding:22px 24px 26px; }
+  .brand { font-size:22px; font-weight:800; letter-spacing:-0.5px; color:#00FF41; }
+  .brand span { color:#ECEDF6; font-weight:300; }
+  .sub { font-size:11px; color:#8A8F9C; text-transform:uppercase; letter-spacing:2px; margin-top:2px; }
+  .hr { height:1px; background:#2D3133; margin:18px 0; border:0; }
+
+  .statusbox { background:#10131A; border:1px solid #2D3133; border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+  .srow { display:flex; align-items:center; padding:5px 0; }
+  .dot { width:10px; height:10px; border-radius:50%; background:#8A8F9C; margin-right:10px; flex:0 0 auto; }
+  .dot.on  { background:#00FF41; }
+  .dot.off { background:#FF4444; }
+  .slabel { flex:1 1 auto; font-size:13px; font-weight:600; }
+  .sval { font-size:11px; color:#8A8F9C; }
+
+  .btnrow { display:flex; gap:10px; margin:6px 0; }
+  button {
+    font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+    border-radius:9px; padding:13px 10px; border:1px solid #2D3133;
+    background:#161A21; color:#ECEDF6; flex:1 1 auto;
+  }
+  button:hover { border-color:#00FF41; }
+  button:active { background:#0B0E14; }
+  .primary { background:#00FF41; color:#050608; border-color:#00FF41; }
+  .danger  { background:#1a1012; color:#FF4444; border-color:#552; border-color:#5c2626; }
+
+  .links { display:flex; gap:8px; margin-top:4px; }
+  .links button { font-size:12px; font-weight:600; padding:10px 6px; }
+  .hint { font-size:11px; color:#8A8F9C; margin-top:14px; line-height:1.6; }
+  .hint b { color:#ECEDF6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">&#129373; KIWI <span>SORTER</span></div>
+  <div class="sub">System Control Panel</div>
+
+  <hr class="hr" />
+
+  <div class="statusbox">
+    <div class="srow"><div class="dot" id="d5000"></div>
+      <div class="slabel">Detection Dashboard</div><div class="sval" id="s5000">checking...</div></div>
+    <div class="srow"><div class="dot" id="d5001"></div>
+      <div class="slabel">DocMind AI (RAG Chat)</div><div class="sval" id="s5001">checking...</div></div>
+  </div>
+
+  <div class="btnrow">
+    <button class="primary" onclick="startAll()">&#9654;  Start System</button>
+    <button class="danger" onclick="stopAll()">&#9632;  Stop System</button>
+  </div>
+
+  <div class="links">
+    <button onclick="openUrl('http://localhost:5000')">Dashboard</button>
+    <button onclick="openUrl('http://localhost:5001')">RAG Chat</button>
+    <button onclick="openUrl('http://localhost:5000/mobile')">Phone</button>
+  </div>
+
+  <div class="hint">
+    <b>Start System</b> launches both servers (two console windows open; first
+    RAG load takes ~30s). Status dots turn green when ready, then the dashboard
+    opens automatically. <b>Stop System</b> closes everything.<br>
+    First time on a new network? Run <b>setup_admin.bat</b> once.
+  </div>
+</div>
+
+<script language="javascript">
+  var shell  = new ActiveXObject("WScript.Shell");
+  var appDir = getDir();
+  var autoOpened = false;
+
+  function getDir() {
+    // location.href = file:///D:/Course%20work/.../Kiwi%20Sorter.hta
+    var p = decodeURIComponent(String(location.href).replace(/^file:\/+/, ""));
+    p = p.replace(/\//g, "\\");
+    return p.substring(0, p.lastIndexOf("\\"));
+  }
+
+  function runHidden(bat) {
+    try { shell.Run('"' + appDir + '\\' + bat + '"', 0, false); }
+    catch (e) { alert("Could not run " + bat + ":\n" + e.message); }
+  }
+
+  function startAll() {
+    runHidden("start_all.bat");
+    setVal("s5000", "starting..."); setVal("s5001", "starting...");
+  }
+  function stopAll() {
+    runHidden("stop_all.bat");
+    autoOpened = true; // don't auto-reopen after a manual stop
+  }
+  function openUrl(u) { try { shell.Run(u, 1, false); } catch (e) {} }
+
+  function setVal(id, t) { document.getElementById(id).innerHTML = t; }
+  function setDot(id, cls) { document.getElementById(id).className = "dot " + cls; }
+
+  function ping(port, dotId, valId, onUp) {
+    var x;
+    try { x = new XMLHttpRequest(); } catch (e) { return; }
+    try {
+      x.open("GET", "http://localhost:" + port + "/status", true);
+      x.timeout = 2500;
+      x.onreadystatechange = function () {
+        if (x.readyState === 4) {
+          if (x.status === 200) { setDot(dotId, "on"); setVal(valId, "running"); onUp(); }
+          else { setDot(dotId, "off"); setVal(valId, "error " + x.status); }
+        }
+      };
+      x.ontimeout = function () { setDot(dotId, "off"); setVal(valId, "offline"); };
+      x.onerror   = function () { setDot(dotId, "off"); setVal(valId, "offline"); };
+      x.send();
+    } catch (e) { setDot(dotId, "off"); setVal(valId, "offline"); }
+  }
+
+  var up5000 = false, up5001 = false;
+  function tick() {
+    ping(5000, "d5000", "s5000", function () {
+      up5000 = true;
+      if (!autoOpened && up5000) { autoOpened = true; openUrl("http://localhost:5000"); }
+    });
+    ping(5001, "d5001", "s5001", function () { up5001 = true; });
+  }
+  tick();
+  window.setInterval(tick, 4000);
+
+  // Size the window to the content
+  try { window.resizeTo(540, 470); } catch (e) {}
+</script>
+</body>
+</html>

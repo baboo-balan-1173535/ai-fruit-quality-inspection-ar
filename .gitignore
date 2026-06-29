@@ -1,0 +1,78 @@
+# ============================================================
+# Kiwi Sorter — .gitignore
+# Keeps secrets, virtualenvs, models, and Unity/build artifacts
+# out of the repo. Only source + docs are committed.
+# ============================================================
+
+# ---- Secrets (NEVER commit) ----
+.env
+*.env
+!*.env.example
+certs/
+config.json
+
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+runs/
+
+# ---- ML models / weights (downloadable, large) ----
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# ---- RAG vector store + runtime data ----
+faiss_index/
+logs/
+results/
+static/results/
+backups/
+
+# ---- Old, ABANDONED Unity project (Unity 6.4, incompatible — do not publish) ----
+KiwiSorterAR/
+
+# ---- Active Unity project (KiwiSorterAR2022): ignore all generated/build output ----
+KiwiSorterAR2022/Library/
+KiwiSorterAR2022/Temp/
+KiwiSorterAR2022/Obj/
+KiwiSorterAR2022/obj/
+KiwiSorterAR2022/Build/
+KiwiSorterAR2022/Builds/
+KiwiSorterAR2022/Logs/
+KiwiSorterAR2022/UserSettings/
+KiwiSorterAR2022/MemoryCaptures/
+KiwiSorterAR2022/.vs/
+KiwiSorterAR2022/*.csproj
+KiwiSorterAR2022/*.sln
+KiwiSorterAR2022/*.user
+KiwiSorterAR2022/*.apk
+
+# ---- OS / editor cruft ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# ---- Third-party XREAL SDK (do NOT redistribute; 237MB tarball exceeds GitHub limits) ----
+Documentation/com.xreal.xr/
+Documentation/com.xreal.xr.tar.gz
+
+# ---- Scratch / misc / large media (host the demo video externally and link it) ----
+others/
+files/
+files.zip
+
+# ---- RAG test uploads (user docs / copyrighted papers — not project code) ----
+DocMindAi Dai/uploads/
+
+# ---- Sample/test images (downloaded stock photos — copyright) ----
+test_images/
+
+# ---- Misc local-only ----
+.claude/

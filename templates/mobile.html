@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B0E14">
+<title>Kiwi Sorter - Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --surface:        #0B0E14;
+  --surface-cont:   #10131A;
+  --surface-hi:     #161A21;
+  --surface-lo:     #080A0F;
+  --surface-lowest: #050608;
+  --on-surface:     #ECEDF6;
+  --on-variant:     #A9ABB3;
+  --on-faint:       #8A8F9C;
+  --outline-var:    #2D3133;
+  --primary:        #00FF41;
+  --accent:         #00D4FF;
+  --danger:         #FF4444;
+  --warn:           #FFC107;
+  --ease-out:       cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+::selection { background: var(--primary); color: var(--surface-lowest); }
+
+.msi {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal; font-style: normal;
+  font-size: 18px; line-height: 1;
+  display: inline-block; vertical-align: -3px;
+  letter-spacing: normal; text-transform: none;
+  white-space: nowrap; direction: ltr;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  -webkit-font-smoothing: antialiased;
+}
+.msi-xl { font-size: 44px; vertical-align: middle; }
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Header ─────────────────────────────────── */
+.header {
+  background: var(--surface-cont);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--outline-var);
+  flex-shrink: 0;
+  gap: 8px;
+}
+.header h1 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px; font-weight: 800; color: var(--primary);
+  letter-spacing: -0.02em;
+}
+.header h1 .brand-light { color: var(--on-surface); font-weight: 300; }
+.badge {
+  font-size: 10px; font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  padding: 3px 9px; border-radius: 12px;
+  background: rgba(0,255,65,.06); border: 1px solid rgba(0,255,65,.2); color: var(--primary);
+  white-space: nowrap;
+  transition: color 200ms ease, background 200ms ease, border-color 200ms ease;
+}
+.badge.warn { background:rgba(255,193,7,.08); border-color:rgba(255,193,7,.3); color:var(--warn); }
+.badge.off  { background:rgba(255,68,68,.08); border-color:rgba(255,68,68,.3); color:var(--danger); }
+
+/* ── Camera ─────────────────────────────────── */
+.camera-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;      /* taller crop works better in portrait hand-held */
+  background: #000;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+@media (orientation: landscape) {
+  .camera-wrap { aspect-ratio: 16/9; }
+}
+#video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+#overlay {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+.placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; color: var(--on-surface);
+  animation: fadeUp 300ms var(--ease-out) both;
+}
+.placeholder .icon { font-size: 44px; }
+.placeholder p { font-size: 13px; text-align: center; line-height: 1.5; }
+
+/* ── Status ─────────────────────────────────── */
+.status-bar {
+  background: var(--surface-lo);
+  padding: 7px 14px;
+  font-size: 12px; color: var(--on-surface);
+  border-bottom: 1px solid var(--outline-var);
+  display: flex; align-items: center; gap: 7px;
+  min-height: 32px; flex-shrink: 0;
+}
+.dot-live {
+  width: 7px; height: 7px;
+  background: var(--primary); border-radius: 50%;
+  animation: blink 1.5s infinite; flex-shrink: 0;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* ── Controls ───────────────────────────────── */
+.controls {
+  display: flex; gap: 8px;
+  padding: 10px 14px;
+  background: var(--surface-cont);
+  border-bottom: 1px solid var(--outline-var);
+  flex-shrink: 0;
+}
+.btn {
+  flex: 1; padding: 11px 6px;
+  border: none; border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; letter-spacing: .02em;
+  transition: transform 160ms var(--ease-out), opacity 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(.97); opacity: .85; }
+.btn-green  { background: var(--primary); color: var(--surface-lowest); }
+.btn-dark   { background: var(--surface-hi); color: var(--on-surface); border: 1px solid var(--outline-var); }
+.btn:disabled { opacity: .3; pointer-events: none; }
+
+/* ── Results ────────────────────────────────── */
+.results {
+  flex: 1; overflow-y: auto;
+  padding: 10px 14px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.empty {
+  text-align: center; padding: 28px 16px; color: var(--on-faint);
+}
+.empty .icon { font-size: 36px; margin-bottom: 8px; }
+.empty p { font-size: 12px; line-height: 1.6; }
+
+/* ── Result card — fades up on insert, staggered ── */
+.card {
+  background: var(--surface-cont);
+  border: 1px solid var(--outline-var);
+  border-radius: 12px; overflow: hidden;
+  animation: fadeUp 300ms var(--ease-out) both;
+}
+.card:nth-child(2) { animation-delay: 50ms; }
+.card:nth-child(3) { animation-delay: 100ms; }
+.card-head {
+  padding: 9px 13px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--outline-var);
+}
+.card-label {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800; font-size: 13px; letter-spacing: .06em;
+}
+.pill {
+  font-size: 10px; font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  padding: 3px 9px; border-radius: 12px;
+  text-transform: uppercase; letter-spacing: .05em;
+  border: 1px solid currentColor;
+}
+.q-Good        { background:rgba(0,255,65,.08);   color:var(--primary); }
+.q-Acceptable  { background:rgba(255,193,7,.08);  color:var(--warn); }
+.q-Poor        { background:rgba(255,152,0,.08);  color:#FF9800; }
+.q-Bad         { background:rgba(255,68,68,.08);  color:var(--danger); }
+.q-unknown     { background:rgba(120,120,120,.08);color:#9E9E9E; }
+
+.card-body {
+  padding: 9px 13px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+}
+.info-row { font-size: 11px; color: var(--on-variant); }
+.info-row strong {
+  display: block; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--on-faint); margin-bottom: 1px;
+}
+.full { grid-column: 1 / -1; }
+.rec {
+  font-size: 11px; color: var(--on-variant); font-style: italic;
+  padding-top: 6px; margin-top: 4px;
+  border-top: 1px solid var(--outline-var);
+}
+
+/* ── Live detection bar (shown below camera) ── */
+.live-bar {
+  background: var(--surface-lo);
+  padding: 5px 14px;
+  display: flex; gap: 6px; flex-wrap: wrap;
+  min-height: 28px; flex-shrink: 0;
+  border-bottom: 1px solid var(--outline-var);
+}
+.det-chip {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 8px;
+  border: 1px solid currentColor; opacity: .9;
+  animation: fadeUp 200ms var(--ease-out) both;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>🥝 KIWI <span class="brand-light">SCANNER</span></h1>
+  <span class="badge" id="connBadge">Checking…</span>
+</div>
+
+<!-- Camera -->
+<div class="camera-wrap" id="camWrap">
+  <div class="placeholder" id="placeholder">
+    <div class="icon"><span class="msi msi-xl">videocam</span></div>
+    <p>Tap <strong>Start Camera</strong><br>to begin live detection</p>
+  </div>
+  <video id="video" autoplay playsinline muted></video>
+  <img id="photoView" alt=""
+       style="display:none;width:100%;height:100%;object-fit:contain;background:#000">
+  <canvas id="overlay"></canvas>
+</div>
+
+<!-- Hidden capture canvas + photo-mode input (native camera, works on HTTP) -->
+<canvas id="capture" style="display:none"></canvas>
+<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+
+<!-- Live detections strip -->
+<div class="live-bar" id="liveBar"></div>
+
+<!-- Status -->
+<div class="status-bar">
+  <div class="dot-live" id="liveDot" style="display:none"></div>
+  <span id="statusText">Ready</span>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="btn btn-green"  id="startBtn" onclick="toggleCamera()">Start Camera</button>
+  <button class="btn btn-dark"   id="deepBtn"  onclick="deepScan()" disabled>Deep Scan</button>
+</div>
+
+<!-- Results -->
+<div class="results" id="results">
+  <div class="empty">
+    <div class="icon"><span class="msi msi-xl">search_off</span></div>
+    <p>Start the camera and point at fruit.<br>
+       Live bounding boxes appear automatically.<br>
+       Tap <strong>Deep Scan</strong> for quality analysis.</p>
+  </div>
+</div>
+
+<script>
+// ── Config (injected by Flask) ───────────────────────────
+const AR_TOKEN  = {{ ar_token | tojson }};
+const DETECT_MS = 600;   // fast pipeline interval (ms)
+
+const COLOURS = { apple:'#e03030', banana:'#f5c000', orange:'#ff7000', kiwi:'#3db030' };
+const ICONS   = { apple:'🍎',      banana:'🍌',      orange:'🍊',      kiwi:'🥝'      };
+
+// ── DOM refs ─────────────────────────────────────────────
+const video      = document.getElementById('video');
+const overlay    = document.getElementById('overlay');
+const capture    = document.getElementById('capture');
+const overlayCtx = overlay.getContext('2d');
+const capCtx     = capture.getContext('2d');
+
+let stream       = null;
+let detecting    = false;
+let detectTimer  = null;
+let lastBoxes    = [];
+
+// ── Photo mode (HTTP fallback) ───────────────────────────
+// Browsers only allow live getUserMedia on HTTPS or localhost. Over plain
+// HTTP navigator.mediaDevices is undefined, so we fall back to the native
+// camera app via <input capture> — snap a photo, then analyse it.
+const LIVE_OK    = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+const photoInput = document.getElementById('photoInput');
+const photoView  = document.getElementById('photoView');
+let   photoMode  = false;
+
+if (!LIVE_OK) {
+  document.getElementById('startBtn').textContent = 'Snap Photo';
+  document.querySelector('#placeholder p').innerHTML =
+    'Live preview needs HTTPS, so this page uses<br><strong>photo mode</strong>: ' +
+    'tap <strong>Snap Photo</strong>, take a picture<br>of the fruit, and it is analysed automatically.<br><br>' +
+    'For a <strong>live preview</strong> open<br>' +
+    '<a href="https://{{ lan_ip }}:5443/mobile" style="color:#4da3ff">https://{{ lan_ip }}:5443/mobile</a><br>' +
+    '(accept the security warning once: it\'s our own self-signed certificate).';
+}
+
+photoInput.onchange = (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (f) loadPhoto(f);
+  e.target.value = '';
+};
+
+function loadPhoto(file) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    // Downscale into the capture canvas (this is what gets sent to the server)
+    let w = img.width, h = img.height;
+    const MAX = 1280;
+    if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+    capture.width = w;  capture.height = h;
+    capCtx.drawImage(img, 0, 0, w, h);
+
+    photoMode = true;
+    photoView.src = url;
+    photoView.style.display = 'block';
+    video.style.display     = 'none';
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('deepBtn').disabled = false;
+    syncOverlay();
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+    setStatus('Photo loaded. Analysing…');
+    deepScan();
+  };
+  img.src = url;
+}
+
+// ── Connection badge ─────────────────────────────────────
+async function checkConn() {
+  const badge = document.getElementById('connBadge');
+  try {
+    const r = await fetch('/status');
+    if (r.ok) {
+      badge.textContent = '● Connected';
+      badge.className   = 'badge';
+    } else {
+      badge.textContent = '✕ ' + r.status;
+      badge.className   = 'badge off';
+    }
+  } catch {
+    badge.textContent = '✕ Offline';
+    badge.className   = 'badge off';
+  }
+}
+checkConn();
+
+// ── Start / stop camera ──────────────────────────────────
+async function toggleCamera() {
+  if (!LIVE_OK) { photoInput.click(); return; }   // photo mode: native camera
+  if (stream) { stopCamera(); return; }
+
+  setStatus('Requesting camera…');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1280 },
+        height: { ideal: 720  },
+      }
+    });
+    video.srcObject = stream;
+    await new Promise(r => { video.onloadedmetadata = r; });
+    video.play();
+
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('startBtn').textContent  = 'Stop';
+    document.getElementById('deepBtn').disabled      = false;
+    document.getElementById('liveDot').style.display = 'block';
+
+    detecting = true;
+    setStatus('Live detection running…');
+    detectLoop();
+
+  } catch (e) {
+    setStatus('Camera error: ' + e.message);
+    stream = null;
+  }
+}
+
+function stopCamera() {
+  detecting = false;
+  clearTimeout(detectTimer);
+  stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  video.srcObject = null;
+  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+  document.getElementById('placeholder').style.display = 'flex';
+  document.getElementById('startBtn').textContent      = 'Start Camera';
+  document.getElementById('deepBtn').disabled          = true;
+  document.getElementById('liveDot').style.display     = 'none';
+  document.getElementById('liveBar').innerHTML         = '';
+  setStatus('Camera stopped.');
+}
+
+// ── Overlay resize ────────────────────────────────────────
+function syncOverlay() {
+  const r      = document.getElementById('camWrap').getBoundingClientRect();
+  overlay.width  = r.width;
+  overlay.height = r.height;
+}
+window.addEventListener('resize', () => { syncOverlay(); drawBoxes(lastBoxes); });
+
+// ── Detection loop ────────────────────────────────────────
+function captureJpeg(quality, cb) {
+  if (stream) {
+    // Live mode: grab the current video frame (max 1280 wide)
+    let vw = video.videoWidth, vh = video.videoHeight;
+    const MAX = 1280;
+    if (vw > MAX) { const s = MAX / vw; vw = MAX; vh = Math.round(vh * s); }
+    capture.width  = vw;
+    capture.height = vh;
+    capCtx.drawImage(video, 0, 0, vw, vh);
+  }
+  // Photo mode: the capture canvas already holds the snapped photo
+  capture.toBlob(cb, 'image/jpeg', quality);
+}
+
+function arHeaders() {
+  return AR_TOKEN ? { 'X-AR-Token': AR_TOKEN } : {};
+}
+
+async function detectLoop() {
+  if (!detecting || !stream || video.readyState < 2) {
+    if (detecting) detectTimer = setTimeout(detectLoop, DETECT_MS);
+    return;
+  }
+
+  captureJpeg(0.70, async (blob) => {
+    try {
+      const form = new FormData();
+      form.append('image', blob, 'frame.jpg');
+
+      const t0  = Date.now();
+      const res = await fetch('/detect', { method: 'POST', headers: arHeaders(), body: form });
+      const ms  = Date.now() - t0;
+
+      if (res.ok) {
+        const data = await res.json();
+        lastBoxes  = data.detections || [];
+        syncOverlay();
+        drawBoxes(lastBoxes);
+        updateLiveBar(lastBoxes);
+        setStatus(
+          lastBoxes.length
+            ? `${lastBoxes.length} fruit(s) detected · ${ms}ms · tap Deep Scan for quality`
+            : `No fruits in frame · ${ms}ms`
+        );
+      } else if (res.status === 401) {
+        setStatus('AR token rejected. Check AR_TOKEN in .env');
+        detecting = false;
+      } else {
+        setStatus('Server error ' + res.status);
+      }
+    } catch (e) {
+      setStatus('Detection error: ' + e.message);
+    }
+
+    if (detecting) detectTimer = setTimeout(detectLoop, DETECT_MS);
+  });
+}
+
+// ── Draw bounding boxes ───────────────────────────────────
+function drawBoxes(boxes) {
+  const W = overlay.width, H = overlay.height;
+  overlayCtx.clearRect(0, 0, W, H);
+  if (!boxes.length) return;
+
+  // The normalised coords are relative to the FULL captured frame, but the
+  // frame isn't shown 1:1: photo mode letterboxes it (object-fit: contain),
+  // live mode centre-crops it (object-fit: cover). Map into the rect the
+  // frame actually occupies — offsets go negative in cover mode.
+  let ox = 0, oy = 0, cw = W, ch = H;
+  if (capture.width > 0) {
+    const s = photoMode
+      ? Math.min(W / capture.width, H / capture.height)   // contain
+      : Math.max(W / capture.width, H / capture.height);  // cover
+    cw = capture.width * s;  ch = capture.height * s;
+    ox = (W - cw) / 2;       oy = (H - ch) / 2;
+  }
+
+  boxes.forEach(det => {
+    const [nx1, ny1, nx2, ny2] = det.bbox_norm;
+    const x  = ox + nx1 * cw,  y  = oy + ny1 * ch;
+    const bw = (nx2 - nx1) * cw,  bh = (ny2 - ny1) * ch;
+    const col  = COLOURS[det.label] || '#888';
+    const icon = ICONS[det.label]   || '🍑';
+
+    // Glow box
+    overlayCtx.shadowColor = col;
+    overlayCtx.shadowBlur  = 10;
+    overlayCtx.strokeStyle = col;
+    overlayCtx.lineWidth   = 2.5;
+    overlayCtx.strokeRect(x, y, bw, bh);
+    overlayCtx.shadowBlur  = 0;
+
+    // Label pill
+    const label = `${icon} ${det.label.toUpperCase()}  ${det.confidence}%`;
+    overlayCtx.font = 'bold 12px -apple-system, sans-serif';
+    const tw = overlayCtx.measureText(label).width;
+    const lh = 20;
+    const lx = x, ly = Math.max(0, y - lh - 2);
+    overlayCtx.fillStyle = col;
+    overlayCtx.beginPath();
+    overlayCtx.roundRect(lx, ly, tw + 10, lh, 4);
+    overlayCtx.fill();
+    overlayCtx.fillStyle = '#000';
+    overlayCtx.fillText(label, lx + 5, ly + 14);
+
+    // Size text
+    overlayCtx.fillStyle = col;
+    overlayCtx.font      = '10px -apple-system, sans-serif';
+    overlayCtx.fillText(`${det.width_cm}×${det.height_cm}cm`, x + 3, y + bh + 13);
+  });
+}
+
+// ── Live detection chips strip ────────────────────────────
+function updateLiveBar(boxes) {
+  const bar = document.getElementById('liveBar');
+  if (!boxes.length) { bar.innerHTML = ''; return; }
+  bar.innerHTML = boxes.map(d => {
+    const col = COLOURS[d.label] || '#888';
+    return `<span class="det-chip" style="color:${col};border-color:${col}40">
+              ${ICONS[d.label]||'🍑'} ${d.label}
+            </span>`;
+  }).join('');
+}
+
+// ── Deep scan (full Claude analysis) ─────────────────────
+async function deepScan() {
+  if (!stream && !photoMode) return;
+  const btn = document.getElementById('deepBtn');
+  btn.disabled     = true;
+  btn.textContent  = '⏳ Analysing…';
+  setStatus('Sending to Claude AI for quality analysis…');
+
+  captureJpeg(0.88, async (blob) => {
+    try {
+      const form = new FormData();
+      form.append('image', blob, 'frame.jpg');
+      const res  = await fetch('/ar-analyze', { method: 'POST', headers: arHeaders(), body: form });
+      const data = await res.json();
+
+      if (data.error) {
+        setStatus(data.error);
+      } else {
+        renderCards(data.detections || [], data.analysis || []);
+        if (photoMode) { syncOverlay(); drawBoxes(data.detections || []); }
+        setStatus(`${(data.detections||[]).length} fruit(s) fully analysed`);
+      }
+    } catch (e) {
+      setStatus('Analysis failed: ' + e.message);
+    }
+    btn.disabled    = false;
+    btn.textContent = photoMode ? 'Re-analyse' : 'Deep Scan';
+  });
+}
+
+// ── Result cards ─────────────────────────────────────────
+function renderCards(dets, analyses) {
+  const el = document.getElementById('results');
+  if (!dets.length) {
+    el.innerHTML = '<div class="empty"><div class="icon">🔍</div><p>No fruits detected in this frame.</p></div>';
+    return;
+  }
+
+  el.innerHTML = dets.map((det, i) => {
+    const qa   = analyses[i] || {};
+    const q    = qa.quality || '?';
+    const qcls = ['Good','Acceptable','Poor','Bad'].includes(q) ? 'q-' + q : 'q-unknown';
+    const col  = COLOURS[det.label] || '#888';
+    const icon = ICONS[det.label]   || '🍑';
+    const days = parseInt(qa.days_remaining) || 0;
+    const dCol = days <= 1 ? '#f44336' : days <= 3 ? '#ff9800' : '#4caf50';
+
+    return `
+    <div class="card" style="border-color:${col}55">
+      <div class="card-head">
+        <span class="card-label" style="color:${col}">${icon} ${det.label.toUpperCase()}</span>
+        <span class="pill ${qcls}">${q}</span>
+      </div>
+      <div class="card-body">
+        <div class="info-row">
+          <strong>Decay Stage</strong>${qa.decay_stage || '?'}
+        </div>
+        <div class="info-row">
+          <strong>Days Left</strong>
+          <span style="color:${dCol};font-weight:800">${qa.days_remaining || '?'}</span>
+        </div>
+        <div class="info-row">
+          <strong>Size</strong>${det.width_cm} × ${det.height_cm} cm
+        </div>
+        <div class="info-row">
+          <strong>Confidence</strong>${det.confidence}%
+        </div>
+        ${qa.defects && qa.defects !== 'None' ? `
+        <div class="info-row full">
+          <strong>Defects</strong>${qa.defects}
+        </div>` : ''}
+        ${qa.recommendation ? `
+        <div class="rec full">${qa.recommendation}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Scroll results into view
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Status helper ─────────────────────────────────────────
+function setStatus(msg) {
+  document.getElementById('statusText').textContent = msg;
+}
+</script>
+</body>
+</html>

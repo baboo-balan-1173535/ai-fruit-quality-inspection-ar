@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiwi Sorter - Fruit Quality</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- ── Nav ── -->
+  <nav>
+    <div class="nav-brand">🥝 KIWI <span class="brand-light">SORTER</span></div>
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="switchTab('camera')"><span class="msi">videocam</span> Camera</button>
+      <button class="btn btn-outline" onclick="switchTab('upload')"><span class="msi">upload_file</span> Upload</button>
+      <button class="btn btn-outline" onclick="openMobileModal()"><span class="msi">smartphone</span> Mobile</button>
+      <button class="btn btn-outline" onclick="openReports()"><span class="msi">forum</span> Reports &amp; Chat</button>
+      <button class="btn btn-outline" id="ar-toggle-btn" onclick="openArModal()" title="AR glasses status and settings"><span class="msi">visibility</span> AR</button>
+      <button class="btn btn-outline" onclick="openSettings()"><span class="msi">settings</span> Settings</button>
+      <button class="btn btn-danger"  onclick="clearHistory()"><span class="msi">delete</span> Clear</button>
+    </div>
+  </nav>
+
+  <!-- ── Main Layout ── -->
+  <div class="main-layout">
+
+    <!-- LEFT: Camera + Terminal -->
+    <div class="left-column">
+      <div class="panel">
+
+        <!-- Camera Tab -->
+        <div id="tab-camera">
+          <div class="panel-title"><span class="msi">videocam</span> Live Camera Feed
+            <span id="cam-index-label" class="badge">Camera 0</span>
+          </div>
+          <div class="camera-container">
+            <img id="camera-stream" src="/video_feed" alt="Camera stream"/>
+            <div id="camera-overlay" class="camera-overlay hidden">
+              <div class="spinner"></div>
+              <span>Analysing...</span>
+            </div>
+          </div>
+          <button class="btn btn-primary full-width" onclick="analyseCamera()">
+            <span class="msi">center_focus_strong</span> Analyse Fruits
+          </button>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="tab-upload" class="hidden">
+          <div class="panel-title"><span class="msi">upload_file</span> Upload Image</div>
+          <div class="upload-zone" id="upload-zone"
+               ondragover="event.preventDefault()"
+               ondrop="handleDrop(event)">
+            <div class="upload-icon"><span class="msi msi-xl">cloud_upload</span></div>
+            <p>Drag & drop an image here</p>
+            <p class="upload-sub">or</p>
+            <label class="btn btn-primary">
+              Browse Files
+              <input type="file" id="file-input" accept="image/*"
+                     onchange="handleFileSelect(event)" hidden>
+            </label>
+          </div>
+          <div id="upload-preview" class="hidden">
+            <img id="preview-img" src="" alt="Preview"/>
+            <button class="btn btn-primary full-width" onclick="analyseUpload()">
+              <span class="msi">center_focus_strong</span> Analyse This Image
+            </button>
+          </div>
+        </div>
+
+        <div id="status-bar" class="status-bar">Ready</div>
+      </div>
+
+      <!-- Terminal -->
+      <div class="panel terminal-panel">
+        <div class="panel-title">
+          <span class="msi">terminal</span> System Log
+          <button class="btn-clear-log" onclick="clearLog()">Clear</button>
+        </div>
+        <div id="terminal" class="terminal"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div class="panel panel-right">
+      <div class="panel-title">
+        <span class="msi">analytics</span> Scan Results
+        <span id="scan-count" class="badge">0 scans</span>
+      </div>
+      <div id="no-results" class="no-results">
+        <div><span class="msi msi-xl">search_off</span></div>
+        <p>No scans yet. Analyse a fruit to see results here.</p>
+      </div>
+      <div id="results-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL: Settings  (Camera | Colour | Devices)
+  ══════════════════════════════════════ -->
+  <div id="modal-settings" class="modal-backdrop hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <span><span class="msi">settings</span> Settings</span>
+        <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Settings section tabs -->
+        <div class="fruit-tabs">
+          <button class="fruit-tab active" id="stab-camera"  onclick="selectSettingsTab('camera')"><span class="msi">videocam</span> Camera</button>
+          <button class="fruit-tab"        id="stab-colour"  onclick="selectSettingsTab('colour')"><span class="msi">palette</span> Colour</button>
+          <button class="fruit-tab"        id="stab-devices" onclick="selectSettingsTab('devices')"><span class="msi">security</span> Devices</button>
+        </div>
+
+        <!-- ── Pane: Camera ── -->
+        <div id="spane-camera">
+          <div class="cal-section">
+            <div class="cal-label">Select Camera Index</div>
+            <p class="cal-hint">Your choice is saved and restored on the next start. Try 0, 1, or 2 if the wrong camera opens.</p>
+            <div class="cam-switch-row">
+              <button class="cam-btn active" id="cam-btn-0" onclick="switchCamera(0)">Camera 0</button>
+              <button class="cam-btn"        id="cam-btn-1" onclick="switchCamera(1)">Camera 1</button>
+              <button class="cam-btn"        id="cam-btn-2" onclick="switchCamera(2)">Camera 2</button>
+            </div>
+            <div id="cam-switch-status" class="cal-hint" style="margin-top:10px;color:#00FF41"></div>
+          </div>
+
+          <div class="cal-section">
+            <div class="cal-label">Size Calibration</div>
+            <p class="cal-hint">
+              Place a ruler in front of your camera and count how many pixels = 1cm.
+              Default is 37 px/cm (assumes ~30cm distance, standard webcam).
+            </p>
+            <div class="slider-row">
+              <label>Pixels per cm</label>
+              <input type="range" id="pxcm-slider" min="10" max="100" value="37"
+                     oninput="document.getElementById('pxcm-val').textContent=this.value">
+              <span id="pxcm-val" class="slider-val">37</span>
+            </div>
+            <button class="btn btn-primary" style="margin-top:10px"
+                    onclick="savePxCm()">Save</button>
+          </div>
+        </div>
+
+        <!-- ── Pane: Colour (HSV) ── -->
+        <div id="spane-colour" class="hidden">
+          <p class="cal-hint" style="margin-bottom:16px">
+            These HSV ranges help the system find the fruit region before sending
+            to YOLO. If a fruit isn't being cropped correctly, adjust its sliders
+            and click Save. H = Hue (colour), S = Saturation, V = Brightness.
+          </p>
+
+          <div class="fruit-tabs">
+            <button class="fruit-tab active" onclick="selectFruitTab('apple')">🍎 Apple</button>
+            <button class="fruit-tab"        onclick="selectFruitTab('banana')">🍌 Banana</button>
+            <button class="fruit-tab"        onclick="selectFruitTab('orange')">🍊 Orange</button>
+            <button class="fruit-tab"        onclick="selectFruitTab('kiwi')">🥝 Kiwi</button>
+          </div>
+
+          <div id="hsv-sliders">
+            <!-- Injected by JS -->
+          </div>
+
+          <div class="hsv-actions">
+            <button class="btn btn-primary" onclick="saveHsv()"><span class="msi">save</span> Save HSV</button>
+            <button class="btn btn-outline" onclick="resetHsv()"><span class="msi">restart_alt</span> Reset to Default</button>
+            <span id="hsv-save-msg" class="cal-hint" style="color:#00FF41"></span>
+          </div>
+        </div>
+
+        <!-- ── Pane: Devices ── -->
+        <div id="spane-devices" class="hidden">
+          <div class="cal-section">
+            <div class="cal-label">Device Access Control</div>
+            <p class="cal-hint">
+              Devices that have connected to this server (phone scanner, AR glasses app).
+              Turn on restriction to allow only approved devices. This laptop is always allowed,
+              so you can't lock yourself out.
+            </p>
+            <label class="toggle-row">
+              <input type="checkbox" id="enforce-toggle" onchange="setEnforce(this.checked)">
+              <span>Restrict access to allowed devices only</span>
+            </label>
+            <div id="device-list" class="device-list">
+              <p class="cal-hint">Loading…</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL: Mobile scanner connect (QR)
+  ══════════════════════════════════════ -->
+  <div id="modal-mobile" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span><span class="msi">qr_code_2</span> Connect a Phone</span>
+        <button class="modal-close" onclick="closeModal('modal-mobile')">✕</button>
+      </div>
+      <div class="modal-body" style="text-align:center">
+        <p class="cal-hint">Scan with your phone's camera (same WiFi network):</p>
+        <div id="qr-box" class="qr-box"></div>
+        <p id="mobile-url" class="mobile-url"></p>
+        <button class="btn btn-outline" onclick="openMobileHere()">Open in this browser</button>
+        <p class="cal-hint" style="margin-top:10px">
+          If the phone says "Device not authorised", open Settings → Devices
+          and Allow its IP.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL: AR glasses settings
+  ══════════════════════════════════════ -->
+  <div id="modal-ar" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span><span class="msi">visibility</span> AR Glasses</span>
+        <button class="modal-close" onclick="closeModal('modal-ar')">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="cal-section">
+          <div class="cal-label">AR Detection</div>
+          <p class="cal-hint">Master switch for the glasses endpoints. When off, the AR app
+             gets "AR disabled" instead of detections.</p>
+          <button class="btn full-width" id="ar-switch-btn" onclick="toggleAR()">AR: …</button>
+        </div>
+
+        <div class="cal-section">
+          <div class="cal-label">Connection Status</div>
+          <div class="device-list">
+            <div class="device-row">
+              <span class="dev-ip" id="ar-server-ip">{{ lan_ip }}:5000</span>
+              <span class="dev-seen">This server (auto-announced on UDP 5006)</span>
+            </div>
+            <div class="device-row">
+              <span class="dev-ip" id="ar-device-ip">no contact yet</span>
+              <span class="dev-seen" id="ar-last-seen">The glasses app appears here when it connects</span>
+              <span class="dev-chip" id="ar-device-chip">offline</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cal-section">
+          <div class="cal-label">Setup</div>
+          <p class="cal-hint">
+            The glasses app finds this server automatically on any WiFi
+            (UDP discovery, no IP typing). Checklist if it can't connect:<br><br>
+            1. Phone and laptop on the <strong>same WiFi</strong>, phone VPN off.<br>
+            2. Run <strong>setup_admin.bat</strong> once (firewall + database).<br>
+            3. AR switch above is <strong>ON</strong>.<br>
+            4. Older APK builds (before auto-discovery) need the IP above typed
+               into the Unity Inspector and a rebuild.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>window.LAN_IP = "{{ lan_ip }}";</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="/static/script.js"></script>
+</body>
+</html>
