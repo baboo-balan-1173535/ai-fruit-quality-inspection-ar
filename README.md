@@ -17,15 +17,16 @@ life** — on an operator dashboard, on a phone, and hands-free through AR glass
 A retrieval-augmented chat layer then answers questions about the scan history
 and any uploaded documents.
 
-## The three components
+## One system, three repositories
 
-| Component | Stack | What it is |
+| Component | Stack | Repository |
 |-----------|-------|------------|
-| **Detection Platform** (`/`) | Flask · YOLOv8 · OpenCV · Claude Vision | Real-time detection, measurement, quality analysis, dashboard, phone scanner, AR endpoints |
-| **DocMindAI RAG** (`DocMindAi Dai/`) | Flask · FAISS · PostgreSQL · Claude · BM25 | Document Q&A and scan-history chat with inline citations, hybrid retrieval, analytics, streaming |
-| **AR Client** (`KiwiSorterAR2022/`) | Unity · C# · XREAL SDK | World-anchored optical see-through overlay on XREAL One glasses |
+| **Detection Platform** (this repo) | Flask · YOLOv8 · OpenCV · Claude Vision | Real-time detection, measurement, quality analysis, dashboard, phone scanner, AR endpoints |
+| **DocMindAI RAG** | Flask · FAISS · PostgreSQL · Claude · BM25 | [docmindai-rag-chatbot](https://github.com/baboo-balan-1173535/docmindai-rag-chatbot) — document Q&A and scan-history chat with citations, hybrid retrieval, analytics |
+| **AR Client** | Unity · C# · XREAL SDK | [xreal-ar-fruit-inspection](https://github.com/baboo-balan-1173535/xreal-ar-fruit-inspection) — world-anchored optical see-through overlay on XREAL One glasses |
 
-Each has its own README. Full technical report:
+The AR client and RAG service both talk to this platform's Flask server. Full
+system technical report:
 [`Documentation/PROJECT_REPORT.md`](Documentation/PROJECT_REPORT.md).
 
 ## Quick start
@@ -49,13 +50,15 @@ Each has its own README. Full technical report:
   document, the scan database, or the web, and answers from the right one.
 - **Zero-config networking** — the glasses discover the server over UDP on any WiFi.
 
-## Status
+## Status & roadmap
 
 Goals 1–5 delivered (detection, AI quality, RAG reports, RAG chat, AR overlay).
-Goal 6 (AR hand-tracking) and a custom multi-task model (kiwi detection +
-trained ripeness head, distilled from Claude) are scoped as future work —
-see [`Documentation/ML_upgrade_plan.md`](Documentation/ML_upgrade_plan.md).
+In development: a custom-trained instance-segmentation model with a ripeness
+head (kiwifruit support + clustered-fruit separation — see `ml/`). Planned: AR
+hand-tracking and PLC/conveyor integration.
 
 ## License
 
-Academic portfolio project. Not for redistribution.
+**All rights reserved.** This is a personal portfolio project published for
+review and demonstration only — no permission is granted to reuse, copy,
+modify, or redistribute any part of the code.

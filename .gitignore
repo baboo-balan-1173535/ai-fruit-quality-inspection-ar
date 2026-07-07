@@ -70,10 +70,16 @@ Documentation/nractivitylife_6_BACKUP/
 Documentation/CV_entries.md
 Documentation/LinkedIn_post.md
 Documentation/AR_v1.0_status.md
+Documentation/ML_upgrade_plan.md
 Documentation/*.docx
 Documentation/*.xml
 Documentation/*.txt
 Documentation/unpacked_final_goal/
+
+# ---- Components published as their own repos (still live here locally) ----
+DocMindAi Dai/
+KiwiSorterAR2022/
+tests/
 
 # ---- Scratch / misc / large media (host the demo video externally and link it) ----
 others/
