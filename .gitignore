@@ -63,6 +63,17 @@ desktop.ini
 # ---- Third-party XREAL SDK (do NOT redistribute; 237MB tarball exceeds GitHub limits) ----
 Documentation/com.xreal.xr/
 Documentation/com.xreal.xr.tar.gz
+Documentation/nr_loader.aar.ORIGINAL_BACKUP*
+Documentation/nractivitylife_6_BACKUP/
+
+# ---- Internal working docs (drafts, progress notes, doc by-products — local only) ----
+Documentation/CV_entries.md
+Documentation/LinkedIn_post.md
+Documentation/AR_v1.0_status.md
+Documentation/*.docx
+Documentation/*.xml
+Documentation/*.txt
+Documentation/unpacked_final_goal/
 
 # ---- Scratch / misc / large media (host the demo video externally and link it) ----
 others/
