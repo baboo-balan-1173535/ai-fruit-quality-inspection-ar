@@ -36,8 +36,27 @@ Segments two touching oranges as separate instances. Confirms the two gaps the
 custom model must close: COCO has **no kiwi class**, and stock weights find only
 **one fruit** in clustered AR frames.
 
-## Next
+## Custom model training — first results (Jul 2026)
 
-- Colab/Kaggle: Detectron2 install + Mask R-CNN demo (Detectron2 is hard on
-  native Windows; train in cloud, infer locally per the plan).
-- Roboflow instance-seg dataset (apple/banana/orange base + collect kiwi).
+Fine-tuned Mask R-CNN via transfer learning (Detectron2, COCO-pretrained
+weights, Colab T4 GPU, data from Roboflow).
+
+- **Fruit model** — apple / banana / orange instance segmentation (with masks).
+  Detects apples at 98-99% confidence on held-out images.
+- **Kiwifruit detector** — detects kiwifruit at 85-95%. Bounding-box only for
+  now (the source dataset had no masks). This closes the motivating benchmark:
+  off-the-shelf COCO Mask R-CNN labels a cluster of kiwifruit "teddy bear" at
+  88% and cannot judge ripeness -- the whole reason for a custom model.
+
+Approach: start from COCO-pretrained weights, re-initialise the output heads for
+the fruit classes, and fine-tune -- so only tens of labelled images per class
+are needed. Healthy convergence (total training loss 2.36 -> 0.33 over 300
+iterations). Trained weights and notebooks are not committed (large /
+environment-specific); this documents the method and results.
+
+## In progress
+
+- Clean instance-segmentation kiwi data (masks, not just boxes).
+- Merge all four fruit classes into a single model.
+- A parallel ripeness-regression head (multi-task loss), with ripeness labels
+  distilled from the existing Claude Vision pipeline.
